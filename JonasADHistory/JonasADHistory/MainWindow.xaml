@@ -1,8 +1,24 @@
-﻿<Window x:Class="JonasADHistory.MainWindow"
+﻿<Window x:Class="JonasSalesHistory.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="MainWindow" Height="350" Width="525">
-    <Grid>
-        
+        Title="MainWindow" Height="543" Width="764">
+    <Grid Margin="0,0,2,-21">
+
+
+        <TextBox x:Name="SearchBox" HorizontalAlignment="Left" Height="20" Margin="122,10,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="229"/>
+
+        <DataGrid x:Name="MainData" ItemsSource="{Binding}" Margin="0,71,10,159" IsReadOnly="True"/>
+
+
+        <StackPanel HorizontalAlignment="Left" Height="123" Margin="10,0,0,31" VerticalAlignment="Bottom" Width="328">
+            <Label x:Name="CustomerInformationTitle" Content="Customer Information" HorizontalAlignment="Left"  VerticalAlignment="Top" Width="155"/>
+            <Label x:Name="CustomerName" Content="Customer Name" HorizontalAlignment="Left" VerticalAlignment="Top" Width="97"/>
+            <Label x:Name="CustomerCode" Content="CustomerCode" HorizontalAlignment="Left" VerticalAlignment="Top" Width="97"/>
+            <Label x:Name="CustomerCode_Copy" Content="CustomerCode" HorizontalAlignment="Left" VerticalAlignment="Top" Width="97"/>
+        </StackPanel>
+        <TextBox x:Name="Part_Search" HorizontalAlignment="Left" Height="20" Margin="122,35,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="229"/>
+        <Label Content="Part Search" HorizontalAlignment="Left" Height="31" Margin="43,29,0,0" VerticalAlignment="Top" Width="74"/>
+        <Label x:Name="customerSearchlabel" Content="Customer Search" HorizontalAlignment="Left" Height="31" Margin="10,6,0,0" VerticalAlignment="Top" Width="107"/>
+
     </Grid>
 </Window>
