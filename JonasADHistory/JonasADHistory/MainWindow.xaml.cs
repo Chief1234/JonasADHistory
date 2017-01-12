@@ -69,9 +69,14 @@ namespace JonasSalesHistory
             // //MainData.ItemsSource = dv;
 
             // look through hashset...
+
+            if (partSearch == null) partSearch = "";
+            if (customerSearch == null) customerSearch = "";
+
             var result = from tr in transactionRecords
+                         where tr.customerNumber != null
                          where tr.partDescription.IndexOf(partSearch, StringComparison.OrdinalIgnoreCase) >= 0
-                         //where tr.customerName.Contains(customerSearch)
+                         where tr.customerName.IndexOf(customerSearch, StringComparison.OrdinalIgnoreCase) >= 0
                          select tr;
 
             HashSet<TransactionRecord> hs = new HashSet<TransactionRecord>(result);
@@ -98,6 +103,8 @@ namespace JonasSalesHistory
             reader = new CsvReader("..\\..\\SalesHist.xls - Sales History_Hdr.csv");
             BVHistoryHighLevel = reader.Table;
 
+            DataSet mainSet = new DataSet();
+
             // generate transaction records...
             TransactionRecord tempRecord;
             foreach (DataRow row in BVHistoryDetail.Rows)
@@ -105,12 +112,15 @@ namespace JonasSalesHistory
                 tempRecord = new TransactionRecord();
                 tempRecord.invoiceNumber = row[0] as string;
 
-                var results = from myRow in BVHistoryHighLevel.AsEnumerable()
-                              where myRow[0] == row[0]
-                              select myRow;
+                // find invoice row in bvhighlevel
+                DataRow found = BVHistoryHighLevel.AsEnumerable().Where(x => x.Field<string>("Invoice No.") == row.Field<string>("Invoice No.")).FirstOrDefault();
 
-                //tempRecord.customerNumber = results[0][2] as string;
-                //tempRecord.customerName = results[0][1] as string;
+                // can't do anything if there's no invoice...
+                if (found != null)
+                {
+                    tempRecord.customerNumber = found[2] as string;
+                    tempRecord.customerName = found[1] as string;
+                }
 
                 //tempRecord.customerNumber = ;
 
@@ -126,6 +136,8 @@ namespace JonasSalesHistory
             // final schema:
             // invoice #, part no, part desc, customer no, customer name, quantity, price, date
             MainData.ItemsSource = dt.DefaultView;
+
+            Console.WriteLine("finished loading data");
         }
 
         public static DataTable ConvertCSVtoDataTable(string strFilePath)
