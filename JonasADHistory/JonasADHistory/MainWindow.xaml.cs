@@ -85,14 +85,14 @@ namespace JonasSalesHistory
         {
 
             // load the raw data
-            CsvReader reader = new CsvReader("..\\..\\..\\JonasTransLog.csv");
+            CsvReader reader = new CsvReader("..\\..\\JonasTransLog.csv");
             JonasHistoryDataTable = reader.Table;
 
             //reader = new CsvReader("..\\..\\..\\SalesHist.xls - Sales History_Dtl.csv");
             //BVHistoryDetail = reader.Table;
-            BVHistoryDetail = ConvertCSVtoDataTable("..\\..\\..\\SalesHist.xls - Sales History_Dtl (1).csv");
+            BVHistoryDetail = ConvertCSVtoDataTable("..\\..\\SalesHist.xls - Sales History_Dtl.csv");
 
-            reader = new CsvReader("..\\..\\..\\SalesHist.xls - Sales History_Hdr.csv");
+            reader = new CsvReader("..\\..\\SalesHist.xls - Sales History_Hdr.csv");
             BVHistoryHighLevel = reader.Table;
 
             // generate transaction records...
