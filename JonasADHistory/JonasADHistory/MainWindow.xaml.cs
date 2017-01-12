@@ -38,6 +38,9 @@ namespace JonasSalesHistory
         {
             InitializeComponent();
 
+            customerSearch = "";
+            partSearch = "";
+
             LoadData();
 
             SearchBox.TextChanged += SearchBox_TextChanged;
@@ -67,8 +70,8 @@ namespace JonasSalesHistory
 
             // look through hashset...
             var result = from tr in transactionRecords
-                         where tr.partDescription.Contains(partSearch)
-                         where tr.customerName.Contains(customerSearch)
+                         where tr.partDescription.IndexOf(partSearch, StringComparison.OrdinalIgnoreCase) >= 0
+                         //where tr.customerName.Contains(customerSearch)
                          select tr;
 
             HashSet<TransactionRecord> hs = new HashSet<TransactionRecord>(result);
@@ -106,9 +109,8 @@ namespace JonasSalesHistory
                               where myRow[0] == row[0]
                               select myRow;
 
-
-                // tempRecord.customerNumber = results[0][2] as string;
-                // tempRecord.customerName = results[0][1] as string;
+                //tempRecord.customerNumber = results[0][2] as string;
+                //tempRecord.customerName = results[0][1] as string;
 
                 //tempRecord.customerNumber = ;
 
