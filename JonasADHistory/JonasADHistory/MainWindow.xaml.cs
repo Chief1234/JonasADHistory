@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Reflection;
 using System.ComponentModel;
 using System.Data;
 using System.IO;
@@ -28,6 +29,8 @@ namespace JonasSalesHistory
         DataTable JonasHistoryDataTable;
         DataTable BVHistoryDetail;
         DataTable BVHistoryHighLevel;
+
+        DataTable MainTable;
 
         string customerSearch;
         string partSearch;
@@ -119,11 +122,73 @@ namespace JonasSalesHistory
                 transactionRecords.Add(tempRecord);
             }
 
-            DataTable dt = ConvertTRSToDataTable(transactionRecords);
+            // make new datatable with the info we want...
+            DataTable fullTable = new DataTable();
+
+            var q = (from detail in BVHistoryDetail.AsEnumerable()
+                     join highLevel in BVHistoryHighLevel.AsEnumerable()
+                     on detail.Field<string>("Invoice No.") equals highLevel.Field<string>("Invoice No.")
+                     select new
+                     {
+                         InvoiceNo = detail.Field<string>("Invoice No."),
+                         CustomerCode = highLevel.Field<string>("Customer No."),
+                         CustomerName = highLevel.Field<string>("Name"),
+                         PartNo = detail.Field<string>("Part number"),
+                         PartDescription = detail.Field<string>("Part Description"),
+                         Quantity = detail.Field<string>("Order qty."),
+                         InvoiceDate = highLevel.Field<string>("Invoice Date"),
+                     });
+
+            MainTable = LINQResultToDataTable(q);
+
+
+            //DataTable dt = ConvertTRSToDataTable(transactionRecords);
 
             // final schema:
             // invoice #, part no, part desc, customer no, customer name, quantity, price, date
-            MainData.ItemsSource = dt.DefaultView;
+            MainData.ItemsSource = MainTable.DefaultView;
+        }
+
+        public DataTable LINQResultToDataTable<T>(IEnumerable<T> Linqlist)
+        {
+            DataTable dt = new DataTable();
+
+
+            PropertyInfo[] columns = null;
+
+            if (Linqlist == null) return dt;
+
+            foreach (T Record in Linqlist)
+            {
+
+                if (columns == null)
+                {
+                    columns = ((Type)Record.GetType()).GetProperties();
+                    foreach (PropertyInfo GetProperty in columns)
+                    {
+                        Type colType = GetProperty.PropertyType;
+
+                        if ((colType.IsGenericType) && (colType.GetGenericTypeDefinition()
+                        == typeof(Nullable<>)))
+                        {
+                            colType = colType.GetGenericArguments()[0];
+                        }
+
+                        dt.Columns.Add(new DataColumn(GetProperty.Name, colType));
+                    }
+                }
+
+                DataRow dr = dt.NewRow();
+
+                foreach (PropertyInfo pinfo in columns)
+                {
+                    dr[pinfo.Name] = pinfo.GetValue(Record, null) == null ? DBNull.Value : pinfo.GetValue
+                    (Record, null);
+                }
+
+                dt.Rows.Add(dr);
+            }
+            return dt;
         }
 
         public static DataTable ConvertCSVtoDataTable(string strFilePath)
