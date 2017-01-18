@@ -30,7 +30,9 @@ namespace JonasSalesHistory
         DataTable BVHistoryDetail;
         DataTable BVHistoryHighLevel;
 
-        DataTable MainTable;
+        DataTable CombinedTable;
+
+        DataTable DisplayTable;
 
         string customerSearch;
         string partSearch;
@@ -64,32 +66,71 @@ namespace JonasSalesHistory
 
         void UpdateQuery()
         {
-            // apply a query to datatable...
-            // basic query test
-            // //DataView dv = new DataView(BVHistoryHighLevel);
-            // //dv.RowFilter = "Name LIKE '%" + customerSearch + "%'";// AND Part Description LIKE '%" + partSearch + "%'";
 
-            // //MainData.ItemsSource = dv;
+            //if (partSearch == null) partSearch = "";
+            //if (customerSearch == null) customerSearch = "";
 
-            // look through hashset...
+            //var result = from tr in transactionrecords
+            //             where tr.customernumber != null
+            //             where tr.partdescription.indexof(partsearch, stringcomparison.ordinalignorecase) >= 0
+            //             where tr.customername.indexof(customersearch, stringcomparison.ordinalignorecase) >= 0
+            //             select tr;
 
-            if (partSearch == null) partSearch = "";
-            if (customerSearch == null) customerSearch = "";
+            //HashSet<TransactionRecord> hs = new HashSet<TransactionRecord>(result);
+            
+            // search customer records...
+            if (customerSearch == "" && partSearch == "")
+            {
+                MainData.ItemsSource = CombinedTable.DefaultView;
+            }
 
-            var result = from tr in transactionRecords
-                         where tr.customerNumber != null
-                         where tr.partDescription.IndexOf(partSearch, StringComparison.OrdinalIgnoreCase) >= 0
-                         where tr.customerName.IndexOf(customerSearch, StringComparison.OrdinalIgnoreCase) >= 0
-                         select tr;
+            else if (customerSearch != "" && partSearch == "")
+            {
+                var result = from row in CombinedTable.AsEnumerable()
+                             where row.Field<string>("CustomerName").IndexOf(customerSearch, StringComparison.OrdinalIgnoreCase) > -1
+                             //&& row.Field<string>("PartDescription").IndexOf(partSearch, StringComparison.CurrentCultureIgnoreCase) > 0
+                             select row;
 
-            HashSet<TransactionRecord> hs = new HashSet<TransactionRecord>(result);
+                DisplayTable = new DataTable();
 
-            // update datagrid...
-            DataTable dt = ConvertTRSToDataTable(hs);
+                if (result.Count() > 0)
+                {
+                    DisplayTable = result.CopyToDataTable();
+                }
+                
 
-            // final schema:
-            // invoice #, part no, part desc, customer no, customer name, quantity, price, date
-            MainData.ItemsSource = dt.DefaultView;
+            }
+            else if (partSearch != "" && customerSearch == ""){
+                var result = from row in CombinedTable.AsEnumerable()
+                             // row.Field<string>("CustomerName").IndexOf(customerSearch, StringComparison.OrdinalIgnoreCase) > -1
+                             where row.Field<string>("PartDescription").IndexOf(partSearch, StringComparison.OrdinalIgnoreCase) > -1
+                             select row;
+
+                DisplayTable = new DataTable();
+
+                if (result.Count() > 0)
+                {
+                    DisplayTable = result.CopyToDataTable();
+                }
+            }
+            else
+            {
+                var result = from row in CombinedTable.AsEnumerable()
+                             where row.Field<string>("CustomerName").IndexOf(customerSearch, StringComparison.OrdinalIgnoreCase) > -1
+                             where row.Field<string>("PartDescription").IndexOf(partSearch, StringComparison.OrdinalIgnoreCase) > -1
+                             select row;
+
+                DisplayTable = new DataTable();
+
+                if (result.Count() > 0)
+                {
+                    DisplayTable = result.CopyToDataTable();
+                }
+            }
+           
+
+            MainData.ItemsSource = DisplayTable.DefaultView;
+
         }
 
         void LoadData()
@@ -129,7 +170,7 @@ namespace JonasSalesHistory
 
                 tempRecord.partNumber = row[2] as string;
                 tempRecord.partDescription = row[3] as string;
-                tempRecord.timeStamp = DateTime.Now;
+                tempRecord.invoiceDate = DateTime.Now;
 
                 transactionRecords.Add(tempRecord);
             }
@@ -151,14 +192,14 @@ namespace JonasSalesHistory
                          InvoiceDate = highLevel.Field<string>("Invoice Date"),
                      });
 
-            MainTable = LINQResultToDataTable(q);
+            CombinedTable = LINQResultToDataTable(q);
 
 
             //DataTable dt = ConvertTRSToDataTable(transactionRecords);
 
             // final schema:
             // invoice #, part no, part desc, customer no, customer name, quantity, price, date
-            MainData.ItemsSource = MainTable.DefaultView;
+            MainData.ItemsSource = CombinedTable.DefaultView;
         }
 
         public DataTable LINQResultToDataTable<T>(IEnumerable<T> Linqlist)
@@ -201,6 +242,122 @@ namespace JonasSalesHistory
                 dt.Rows.Add(dr);
             }
             return dt;
+        }
+
+        //public static DataTable ToDataTable<T>(this IEnumerable<T> items)
+        //{
+        //    var tb = new DataTable(typeof(T).Name);
+
+        //    PropertyInfo[] props = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+
+        //    foreach (var prop in props)
+        //    {
+        //        tb.Columns.Add(prop.Name, prop.PropertyType);
+        //    }
+
+        //    foreach (var item in items)
+        //    {
+        //        var values = new object[props.Length];
+        //        for (var i = 0; i < props.Length; i++)
+        //        {
+        //            values[i] = props[i].GetValue(item, null);
+        //        }
+
+        //        tb.Rows.Add(values);
+        //    }
+
+        //    return tb;
+        //}
+        static Dictionary<char, List<int>> tempDic;
+        static bool FastContains(string source, string search)
+        {
+            tempDic = new Dictionary<char, List<int>>();
+            source = source.ToLower();
+            search = search.ToLower();
+
+            // make dictionary out of source string
+            char[] charArray = source.ToCharArray();
+
+            for (int i = 0; i < charArray.Length; i++)
+            {
+                // add searchable chars to dictionary
+                if (!tempDic.ContainsKey(charArray[i])){
+                    tempDic.Add(charArray[i], new List<int>());
+                    tempDic[charArray[i]].Add(i);
+                }
+                else tempDic[charArray[i]].Add(i);
+            }
+
+            // loop through search string to see if chars show up in dictionary
+            char[] searchArray = search.ToCharArray();
+            List<int> prevIndexes = new List<int>();
+            for (int j = 0; j < searchArray.Length; j++)
+            {
+                if (j == 0)
+                {
+                    if (tempDic.ContainsKey(searchArray[j]))
+                    {
+                        prevIndexes = tempDic[searchArray[j]];
+                        continue;
+                    }
+                    else return false;
+                }
+                else
+                {
+                    char tempChar = searchArray[j];
+                    if (tempDic.ContainsKey(tempChar)){
+
+                        // does this character occur after the previous character?
+                        bool containsNext = ListContainsNext(prevIndexes, tempDic[tempChar]);
+
+                        return containsNext;
+
+                        //bool passFlag = true;
+                        //foreach (var prevIndex in prevIndexes)
+                        //{
+                        //    if (tempDic[tempChar].Contains(prevIndex + 1))
+                        //    {
+                        //        prevIndexes = tempDic[tempChar];
+                        //    }
+                            
+                        //}
+
+                        //if (passFlag == false) return false;
+
+                        //int k = 0;
+                        //while (k < j){
+                        //    if (prevIndexes.Contains(j - 1))
+                        //    {
+                        //        prevIndexes = tempDic[tempChar];
+                        //        continue;
+                        //    }
+                        //}
+                    }
+                    
+                    return false;
+                    
+                }               
+            }
+
+            return true;
+        }
+
+        public static bool ListContainsNext(List<int> prev, List<int> next)
+        {
+
+            bool trueFlag = true;
+            for(int i = 0; i < next.Count(); i ++){
+                // this character is contained in sequence...
+                if (trueFlag == true && prev.Contains(next[i] -1)){
+                    continue;
+                }
+                else
+                {
+                    trueFlag = false;
+                }
+            }
+
+            return trueFlag;
         }
 
         public static DataTable ConvertCSVtoDataTable(string strFilePath)
@@ -251,7 +408,7 @@ namespace JonasSalesHistory
                 dr[2] = array.customerName;
                 dr[3] = array.partNumber;
                 dr[4] = array.partDescription;
-                dr[5] = array.timeStamp;
+                dr[5] = array.invoiceDate;
 
                 table.Rows.Add(dr);
             }
@@ -292,6 +449,8 @@ namespace JonasSalesHistory
         public string customerName;
         public string partNumber;
         public string partDescription;
-        public DateTime timeStamp;
+        public int quantity;
+        public DateTime invoiceDate;
+
     }
 }
