@@ -35,7 +35,8 @@ namespace JonasSalesHistory
         DataTable DisplayTable;
 
         string customerSearch;
-        string partSearch;
+        string partNameSearch;
+        string partNoSearch;
 
         HashSet<TransactionRecord> transactionRecords = new HashSet<TransactionRecord>();
 
@@ -44,23 +45,91 @@ namespace JonasSalesHistory
             InitializeComponent();
 
             customerSearch = "";
-            partSearch = "";
+            partNameSearch = "";
 
             LoadData();
 
-            SearchBox.TextChanged += SearchBox_TextChanged;
-            Part_Search.TextChanged += Part_Search_TextChanged;
+            CustomerNameSearchBox.TextChanged += SearchChanged;
+            PartNameSearchBox.TextChanged += SearchChanged;
+            PartNumberSearchBox.TextChanged += SearchChanged;
+
+            MainData.MouseDoubleClick +=  MainData_MouseDoubleClick;
+            MainData.SelectionChanged += MainData_SelectionChanged;
         }
 
-        void Part_Search_TextChanged(object sender, TextChangedEventArgs e)
+        void MainData_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            partSearch = (sender as TextBox).Text;
-            UpdateQuery();
+
+            if (MainData.SelectedItem == null) return;
+
+            DataRowView dataRow = (DataRowView)MainData.SelectedItem;
+            int index = MainData.CurrentCell.Column.DisplayIndex;
+
+            string searchString = dataRow.Row.ItemArray[index].ToString();
+
+            if (index == 2)
+            {
+                // find the customer info for this customer...
+                var customerInfo = from row in BVHistoryHighLevel.AsEnumerable()
+                                   where row.Field<string>("Name") == searchString
+                                   select row;
+
+                ContextualData.ItemsSource = customerInfo.CopyToDataTable().DefaultView;
+            }
+            else if (index == 0)
+            {
+                // display invoice details...
+                var invoiceInfo = from row in BVHistoryDetail.AsEnumerable()
+                                  where row[0] == searchString
+                                  select row;
+
+                ContextualData.ItemsSource = invoiceInfo.CopyToDataTable().DefaultView;
+            }
         }
 
-        void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
+        void MainData_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            customerSearch = (sender as TextBox).Text;
+            // what did the user click?
+           
+            DataRowView dataRow = (DataRowView)MainData.SelectedItem;
+            int index = MainData.CurrentCell.Column.DisplayIndex;
+
+            if (index == 0)
+            {
+                
+            }
+            if (index == 1)
+            {
+
+            }
+            if (index == 2)
+            {
+                CustomerNameSearchBox.Text = dataRow.Row.ItemArray[index].ToString();
+
+                // find the customer info for this customer...
+                var customerInfo = from row in BVHistoryHighLevel.AsEnumerable()
+                                   where row.Field<string>("Name") == dataRow.Row.ItemArray[index].ToString()
+                                   select row;
+
+                ContextualData.ItemsSource = customerInfo.CopyToDataTable().DefaultView;
+
+            }
+            if (index == 3)
+            {
+                PartNumberSearchBox.Text = dataRow.Row.ItemArray[index].ToString();
+            }
+            if (index == 4){
+                PartNameSearchBox.Text = dataRow.Row.ItemArray[index].ToString();
+            }
+
+        }
+
+        void SearchChanged(object sender, TextChangedEventArgs e)
+        {
+            customerSearch = CustomerNameSearchBox.Text;
+            partNoSearch = PartNumberSearchBox.Text;
+            partNameSearch = PartNameSearchBox.Text;
+
             UpdateQuery();
         }
 
@@ -79,45 +148,46 @@ namespace JonasSalesHistory
             //HashSet<TransactionRecord> hs = new HashSet<TransactionRecord>(result);
             
             // search customer records...
-            if (customerSearch == "" && partSearch == "")
-            {
-                MainData.ItemsSource = CombinedTable.DefaultView;
-            }
+            //if (customerSearch == "" && partSearch == "")
+            //{
+            //    MainData.ItemsSource = CombinedTable.DefaultView;
+            //}
 
-            else if (customerSearch != "" && partSearch == "")
-            {
-                var result = from row in CombinedTable.AsEnumerable()
-                             where row.Field<string>("CustomerName").IndexOf(customerSearch, StringComparison.OrdinalIgnoreCase) > -1
-                             //&& row.Field<string>("PartDescription").IndexOf(partSearch, StringComparison.CurrentCultureIgnoreCase) > 0
-                             select row;
+            //else if (customerSearch != "" && partSearch == "" && partNoSearch == "")
+            //{
+            //    var result = from row in CombinedTable.AsEnumerable()
+            //                 where row.Field<string>("CustomerName").IndexOf(customerSearch, StringComparison.OrdinalIgnoreCase) > -1
+            //                 //&& row.Field<string>("PartDescription").IndexOf(partSearch, StringComparison.CurrentCultureIgnoreCase) > 0
+            //                 select row;
 
-                DisplayTable = new DataTable();
+            //    DisplayTable = new DataTable();
 
-                if (result.Count() > 0)
-                {
-                    DisplayTable = result.CopyToDataTable();
-                }
+            //    if (result.Count() > 0)
+            //    {
+            //        DisplayTable = result.CopyToDataTable();
+            //    }
                 
 
-            }
-            else if (partSearch != "" && customerSearch == ""){
-                var result = from row in CombinedTable.AsEnumerable()
-                             // row.Field<string>("CustomerName").IndexOf(customerSearch, StringComparison.OrdinalIgnoreCase) > -1
-                             where row.Field<string>("PartDescription").IndexOf(partSearch, StringComparison.OrdinalIgnoreCase) > -1
-                             select row;
+            //}
+            //else if (partSearch != "" && customerSearch == ""){
+            //    var result = from row in CombinedTable.AsEnumerable()
+            //                 // row.Field<string>("CustomerName").IndexOf(customerSearch, StringComparison.OrdinalIgnoreCase) > -1
+            //                 where row.Field<string>("PartDescription").IndexOf(partSearch, StringComparison.OrdinalIgnoreCase) > -1
+            //                 select row;
 
-                DisplayTable = new DataTable();
+            //    DisplayTable = new DataTable();
 
-                if (result.Count() > 0)
-                {
-                    DisplayTable = result.CopyToDataTable();
-                }
-            }
-            else
-            {
+            //    if (result.Count() > 0)
+            //    {
+            //        DisplayTable = result.CopyToDataTable();
+            //    }
+            //}
+            //else
+            //{
                 var result = from row in CombinedTable.AsEnumerable()
                              where row.Field<string>("CustomerName").IndexOf(customerSearch, StringComparison.OrdinalIgnoreCase) > -1
-                             where row.Field<string>("PartDescription").IndexOf(partSearch, StringComparison.OrdinalIgnoreCase) > -1
+                             where row.Field<string>("PartDescription").IndexOf(partNameSearch, StringComparison.OrdinalIgnoreCase) > -1
+                             where row.Field<string>("PartNo").IndexOf(partNoSearch, StringComparison.OrdinalIgnoreCase) > -1
                              select row;
 
                 DisplayTable = new DataTable();
@@ -126,7 +196,7 @@ namespace JonasSalesHistory
                 {
                     DisplayTable = result.CopyToDataTable();
                 }
-            }
+            //}
            
 
             MainData.ItemsSource = DisplayTable.DefaultView;
